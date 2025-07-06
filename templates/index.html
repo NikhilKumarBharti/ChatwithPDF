@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with PDF</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 900px;
+            min-height: 700px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .upload-section {
+            border: 2px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-section.dragover {
+            background: #e8f0fe;
+            border-color: #4285f4;
+            transform: scale(1.02);
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .chat-section h3 {
+            color: #333;
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            min-height: 400px;
+            border: 1px solid #e5e7eb;
+            border-radius: 15px;
+            padding: 25px;
+            overflow-y: auto;
+            background: #fafbfc;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f7fafc;
+        }
+        
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f7fafc;
+            border-radius: 3px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            padding: 16px 20px;
+            border-radius: 20px;
+            max-width: 85%;
+            word-wrap: break-word;
+            line-height: 1.7;
+            font-size: 15px;
+            position: relative;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .bot-message {
+            background: white;
+            color: #2d3748;
+            margin-right: auto;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .bot-message h4 {
+            color: #4a5568;
+            font-size: 1.1em;
+            margin-bottom: 12px;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        
+        .bot-message p {
+            margin-bottom: 12px;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+        
+        .bot-message p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .bot-message ul, .bot-message ol {
+            margin: 12px 0;
+            padding-left: 20px;
+            color: #2d3748;
+        }
+        
+        .bot-message li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        .bot-message strong {
+            color: #2b6cb0;
+            font-weight: 600;
+        }
+        
+        .bot-message em {
+            color: #718096;
+            font-style: italic;
+        }
+        
+        .bot-message .highlight {
+            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .bot-message .section {
+            margin: 16px 0;
+            padding: 12px;
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .chat-input-section {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            background: white;
+            padding: 15px;
+            border-radius: 25px;
+            border: 2px solid #e2e8f0;
+            transition: border-color 0.3s ease;
+        }
+        
+        .chat-input-section:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 20px;
+            font-size: 16px;
+            outline: none;
+            background: #f8fafc;
+            transition: background-color 0.3s ease;
+        }
+        
+        .chat-input:focus {
+            background: white;
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 20px;
+            border-radius: 20px;
+            max-width: 85%;
+            background: white;
+            border: 1px solid #e2e8f0;
+            margin-right: auto;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                min-height: 600px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .message {
+                max-width: 90%;
+                font-size: 14px;
+            }
+            
+            .chat-input-section {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .chat-input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Chat with PDF</h1>
+            <p>Upload a PDF and start asking questions about its content</p>
+        </div>
+        
+        <div class="content">
+            <div id="status" class="status hidden"></div>
+            
+            <div class="upload-section" id="uploadSection">
+                <h3>📄 Upload PDF Document</h3>
+                <p>Drag and drop your PDF file here or click to select</p>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    Select PDF File
+                </button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing your PDF...</p>
+            </div>
+            
+            <div class="chat-section" id="chatSection">
+                <h3>💬 Chat with your PDF</h3>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot-message">
+                        👋 Hi! Upload a PDF document and I'll help you find information from it.
+                    </div>
+                </div>
+                
+                <div class="chat-input-section">
+                    <input type="text" id="chatInput" class="chat-input" 
+                           placeholder="Ask a question about your PDF..." 
+                           onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="send-btn" onclick="sendMessage()" id="sendBtn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pdfUploaded = false;
+        let isTyping = false;
+        
+        // File upload handling
+        const fileInput = document.getElementById('fileInput');
+        const uploadSection = document.getElementById('uploadSection');
+        const loading = document.getElementById('loading');
+        const status = document.getElementById('status');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        
+        // Drag and drop functionality
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                handleFileUpload(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+        
+        function handleFileUpload(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            loading.style.display = 'block';
+            uploadSection.style.display = 'none';
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                uploadSection.style.display = 'block';
+                
+                if (data.error) {
+                    showStatus('❌ ' + data.error, 'error');
+                } else {
+                    showStatus('✅ ' + data.message, 'success');
+                    pdfUploaded = true;
+                    chatMessages.innerHTML = '<div class="message bot-message">🎉 PDF uploaded successfully! You can now ask questions about the document.</div>';
+                }
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                uploadSection.style.display = 'block';
+                showStatus('❌ Error uploading file: ' + error.message, 'error');
+            });
+        }
+        
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.classList.remove('hidden');
+            setTimeout(() => {
+                status.classList.add('hidden');
+            }, 5000);
+        }
+        
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message || isTyping) return;
+            
+            if (!pdfUploaded) {
+                showStatus('❌ Please upload a PDF first', 'error');
+                return;
+            }
+            
+            // Disable input while processing
+            isTyping = true;
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+            
+            // Add user message to chat
+            addMessage(message, 'user');
+            chatInput.value = '';
+            
+            // Add typing indicator
+            const typingIndicator = addTypingIndicator();
+            
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove typing indicator
+                typingIndicator.remove();
+                
+                if (data.error) {
+                    addMessage('❌ Error: ' + data.error, 'bot');
+                } else {
+                    addMessage(data.response, 'bot', true);
+                }
+            })
+            .catch(error => {
+                typingIndicator.remove();
+                addMessage('❌ Error: ' + error.message, 'bot');
+            })
+            .finally(() => {
+                // Re-enable input
+                isTyping = false;
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+            });
+        }
+        
+        function addMessage(message, sender, isFormatted = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            if (isFormatted && sender === 'bot') {
+                messageDiv.innerHTML = formatBotMessage(message);
+            } else {
+                messageDiv.textContent = message;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return messageDiv;
+        }
+        
+        function addTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+                <span>AI is thinking...</span>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return typingDiv;
+        }
+        
+        function formatBotMessage(message) {
+            // Clean and structure the message
+            let formatted = message
+                // Remove extra whitespace
+                .replace(/\s+/g, ' ')
+                .trim();
+            
+            // Handle different sections and structure
+            if (formatted.includes('###') || formatted.includes('**')) {
+                // Handle markdown-style formatting
+                formatted = formatted
+                    // Convert ### headers to h4
+                    .replace(/###\s*([^:]+):/g, '<h4>$1</h4>')
+                    // Convert **bold** to strong
+                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                    // Convert *italic* to em
+                    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            }
+            
+            // Split into paragraphs and format
+            const paragraphs = formatted.split(/\n\n+/);
+            let formattedParagraphs = [];
+            
+            for (let para of paragraphs) {
+                para = para.trim();
+                if (!para) continue;
+                
+                // Handle lists
+                if (para.includes('\n- ') || para.includes('\n* ')) {
+                    // Convert to proper list
+                    const items = para.split(/\n[-*]\s+/).filter(item => item.trim());
+                    if (items.length > 1) {
+                        const firstItem = items[0].trim();
+                        const listItems = items.slice(1).map(item => `<li>${item.trim()}</li>`).join('');
+                        formattedParagraphs.push(`<p>${firstItem}</p><ul>${listItems}</ul>`);
+                        continue;
+                    }
+                }
+                
+                // Handle numbered lists
+                if (para.match(/\d+\.\s+/)) {
+                    const items = para.split(/\n?\d+\.\s+/).filter(item => item.trim());
+                    if (items.length > 1) {
+                        const firstItem = items[0].trim();
+                        const listItems = items.slice(1).map(item => `<li>${item.trim()}</li>`).join('');
+                        if (firstItem) {
+                            formattedParagraphs.push(`<p>${firstItem}</p><ol>${listItems}</ol>`);
+                        } else {
+                            formattedParagraphs.push(`<ol>${listItems}</ol>`);
+                        }
+                        continue;
+                    }
+                }
+                
+                // Handle special sections
+                if (para.includes('Key Details:') || para.includes('Eligibility:') || para.includes('Application:')) {
+                    formattedParagraphs.push(`<div class="section">${para}</div>`);
+                    continue;
+                }
+                
+                // Regular paragraph
+                formattedParagraphs.push(`<p>${para}</p>`);
+            }
+            
+            let result = formattedParagraphs.join('');
+            
+            // Final cleanup and enhancements
+            result = result
+                // Fix line breaks within paragraphs
+                .replace(/\n/g, '<br>')
+                // Highlight important terms
+                .replace(/\b(eligibility|application|deadline|requirement|fellowship|program)\b/gi, '<span class="highlight">$1</span>')
+                // Clean up extra spaces
+                .replace(/\s+/g, ' ')
+                // Clean up multiple breaks
+                .replace(/(<br>\s*){3,}/g, '<br><br>');
+            
+            return result;
+        }
+        
+        // Auto-focus on input when page loads
+        window.addEventListener('load', () => {
+            chatInput.focus();
+        });
+    </script>
+</body>
+</html>

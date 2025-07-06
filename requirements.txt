@@ -1,0 +1,37 @@
+# Core LangChain packages
+langchain==0.2.16
+langchain-core==0.2.38
+langchain-community==0.2.16
+
+# Vector store and embeddings
+faiss-cpu==1.8.0
+sentence-transformers==3.0.1
+
+# PDF processing
+PyPDF2==3.0.1
+pypdf==4.3.1
+
+# HTTP requests
+requests==2.32.3
+
+# Web framework (if using Flask)
+Flask==3.0.3
+werkzeug==3.0.3
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Logging and utilities
+pydantic==2.8.2
+typing-extensions==4.12.2
+
+# Optional: for better performance
+numpy==1.26.4
+scikit-learn==1.5.1
+
+# Optional: for GPU support (uncomment if needed)
+# faiss-gpu==1.8.0
+
+# Development tools (optional)
+# jupyter==1.0.0
+# ipython==8.26.0
